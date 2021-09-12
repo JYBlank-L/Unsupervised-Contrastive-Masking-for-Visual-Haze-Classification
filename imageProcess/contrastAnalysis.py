@@ -9,7 +9,7 @@ from brightImageCal import brightImageCal
 from darkChannelCal import darkChannelCal
 from brightChannelCal import brightChannelCal
 
-def contrastAnalysis(image, path, result_path):
+def contrastAnalysis(image, path, filter):
     '''
     :param
 
@@ -28,10 +28,10 @@ def contrastAnalysis(image, path, result_path):
     image_bright = brightImageCal(image, path)
 
     img_dark = Image.fromarray(image_dark)
-    img_dark.save(result_path + 'img_dark.png')
+    img_dark.save(path + 'img_dark.png')
 
     img_bright = Image.fromarray(image_bright)
-    img_bright.save(result_path + 'img_bright.png')
+    img_bright.save(path + 'img_bright.png')
     # ----------------------------------------------------------------------------------------------------------------------
 
 
@@ -44,13 +44,13 @@ def contrastAnalysis(image, path, result_path):
     # channel maps of dark image
     print("Computing dark channel.")
     start_time = time.perf_counter()
-    darkChannelMap_dark = darkChannelCal(image_dark, path)
+    darkChannelMap_dark = darkChannelCal(image_dark, filter)
     print("Running time for dark channel is %f sec." % (time.perf_counter() - start_time))
 
     # channel maps of bright image
     print("Computing bright channel.")
     start_time = time.perf_counter()
-    brightChannelMap_bright = brightChannelCal(image_bright, path)
+    brightChannelMap_bright = brightChannelCal(image_bright, filter)
     print("Running time for bright channel is %f sec." % (time.perf_counter() - start_time))
     # ----------------------------------------------------------------------------------------------------------------------
 

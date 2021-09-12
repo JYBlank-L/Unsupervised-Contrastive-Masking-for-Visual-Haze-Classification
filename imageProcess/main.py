@@ -21,7 +21,7 @@ if __name__ == "__main__":
     root_list = ["../realphotos/", "../haze-level/"]
     photo_path_list = ["../realphotos/photos/", "../haze-level/images/"]
     label_path_list = ["../realphotos/labels.mat", "../haze-level/labels.txt"]
-    type = 1  # 0 for realphotos, 1 for haze_level
+    type = 0  # 0 for realphotos, 1 for haze_level
     # Path to root folder
     root = root_list[type]
     # Path to read image: Load Image as a m*n*3 matrix
@@ -42,8 +42,11 @@ if __name__ == "__main__":
     flag_test[index_all] = 1
 
     # --------------------------------------------------------------------------------------------------------------------
+    channel_filter = 40
+
+    # --------------------------------------------------------------------------------------------------------------------
     # Process photos
-    for x in range(0, number_of_photos):
+    for x in range(2, number_of_photos):
         print("Start to process image %d." % (x + 1))
 
         # Set path to save internal results of each image
@@ -62,4 +65,22 @@ if __name__ == "__main__":
         # calculate the running time of the whole process
         # start_time = time.clock()
         start_time = time.perf_counter()
+
+        # Compute haze regions
+        # Contrast map calculation
+        contrast_time = time.perf_counter()
+        contrastMap_image, darkChannelMap_dark = contrastAnalysis(image, result_path, channel_filter)
+        print("Running time for contrast time is %f sec." % (time.perf_counter() - contrast_time))
+
+        # Compute denoising contrast map - smoothed with mode filter
+        m, n = contrastMap_image.shape
+        patch_size_radius = min(m, n) // (20 * 2)  # radius of filter
+        img = Image.fromarray(contrastMap_image)
+        img.save(result_path + 'contrastMapImage1.png')
+        darkChannelMap_dark_image = Image.fromarray(darkChannelMap_dark)
+        darkChannelMap_dark_image.save(result_path + 'darkChannelMap_dark_image1.png')
+        # DenoisedImage = img.filter(IF.ModeFilter(patch_size_radius))
+        # DenoisedImage.save(result_path + 'DenoisedImage1.png')
+        print("hhh")
+        ipdb.set_trace()
 

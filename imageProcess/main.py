@@ -14,6 +14,7 @@ from hazePatchCal import hazePatchCal
 from imageResize import imageResize
 from loadLabel import loadLabel
 from sample import sample
+from deNosied import denoisedImage
 import imageBox
 
 if __name__ == "__main__":
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     root_list = ["../realphotos/", "../haze-level/"]
     photo_path_list = ["../realphotos/photos/", "../haze-level/images/"]
     label_path_list = ["../realphotos/labels.mat", "../haze-level/labels.txt"]
-    type = 0  # 0 for realphotos, 1 for haze_level
+    type = 1  # 0 for realphotos, 1 for haze_level
     # Path to root folder
     root = root_list[type]
     # Path to read image: Load Image as a m*n*3 matrix
@@ -43,10 +44,11 @@ if __name__ == "__main__":
 
     # --------------------------------------------------------------------------------------------------------------------
     channel_filter = 40
+    denoised_filter = 20
 
     # --------------------------------------------------------------------------------------------------------------------
     # Process photos
-    for x in range(2, number_of_photos):
+    for x in range(0, 10):
         print("Start to process image %d." % (x + 1))
 
         # Set path to save internal results of each image
@@ -72,15 +74,24 @@ if __name__ == "__main__":
         contrastMap_image, darkChannelMap_dark = contrastAnalysis(image, result_path, channel_filter)
         print("Running time for contrast time is %f sec." % (time.perf_counter() - contrast_time))
 
-        # Compute denoising contrast map - smoothed with mode filter
-        m, n = contrastMap_image.shape
-        patch_size_radius = min(m, n) // (20 * 2)  # radius of filter
         img = Image.fromarray(contrastMap_image)
         img.save(result_path + 'contrastMapImage1.png')
         darkChannelMap_dark_image = Image.fromarray(darkChannelMap_dark)
         darkChannelMap_dark_image.save(result_path + 'darkChannelMap_dark_image1.png')
-        # DenoisedImage = img.filter(IF.ModeFilter(patch_size_radius))
-        # DenoisedImage.save(result_path + 'DenoisedImage1.png')
-        print("hhh")
-        ipdb.set_trace()
+
+        denoised_time = time.perf_counter()
+        DenoisedImage = denoisedImage(contrastMap_image, denoised_filter)
+        DenoisedImage.save(result_path + 'DenoisedImage1.png')
+        print("Running time for denoised time is %f sec." % (time.perf_counter() - denoised_time))
+
+        # obtain mask image and boundary of the smallest box covering all haze regions
+        m, n = contrastMap_image.shape
+        mask, bound, shape = maskImageCal(DenoisedImage, m, n)
+        rb_x = np.max(shape[0])
+        rb_y = np.max(shape[1])
+        lt_x = np.min(shape[0])
+        lt_y = np.min(shape[1])
+        haze_region_dark = image[lt_x:rb_x, lt_y:rb_y]
+        haze_region_img = Image.fromarray(haze_region_dark)
+        haze_region_img.save(result_path + 'hazeRegionImage1.png')
 

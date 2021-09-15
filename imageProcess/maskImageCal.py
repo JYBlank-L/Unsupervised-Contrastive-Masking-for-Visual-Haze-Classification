@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
-
+import ipdb
 import numpy as np
+import torch
+import torch.nn as nn
 
 
 
@@ -31,7 +33,7 @@ def maskImageCal(DenoisedImage, m, n):
     patch_size = np.array([m // 30, n // 30])  # smallest patch size we want
     patch_size_radius = patch_size // 2  # radius of filter
 
-    bound = np.array([0, 255, 0, 255],
+    bound = np.array([255, 0, 255, 0],
                      dtype=np.uint16)  # obtain the bound of smallest box covering the haze region - [row_top, row_bottom, vol_left, vol_right]
 
     empty_haze_region = 1
@@ -41,15 +43,19 @@ def maskImageCal(DenoisedImage, m, n):
 
         if flag == 0 and empty_haze_region == 0:  # to ensure we just scan the first region at the upper side of the image
             break
-
+            # 循环结束条件是图片的雾霾区域在行保持连续，即第一行存在雾霾区域，紧接着的下一行也应该存在雾霾区域
         flag = 0
 
         for j in range(patch_size_radius[1], n - patch_size_radius[1]):
+
+            if i == 392 and j == 131:
+                ipdb.set_trace()
 
             # filter
             batch = temp[(i - patch_size_radius[0]): (i + patch_size_radius[0]),
                     (j - patch_size_radius[1]): (j + patch_size_radius[1])]
             count = np.count_nonzero(batch == 255)
+
 
             if count == 0:  # if the patch does not contain surely non-haze pixels
 
@@ -66,5 +72,17 @@ def maskImageCal(DenoisedImage, m, n):
                 bound[2] = min(bound[2], j - patch_size_radius[1])
                 bound[3] = max(bound[3], j + patch_size_radius[1] - 1)
 
+    max_out = nn.MaxPool2d(kernel_size=[patch_size_radius[0]*2, patch_size_radius[1]*2],
+                     stride=1,
+                     return_indices=True)
 
-    return mask, bound
+    input = torch.from_numpy(temp.astype(float)).unsqueeze(0)
+    output = max_out(input)
+    values = output[0].squeeze().numpy()
+    value = np.array(values)
+    position = output[1].squeeze().numpy()
+    shape = np.where(value != 255)
+    value1 = np.unique(shape[0])
+    ipdb.set_trace()
+
+    return mask, bound, shape

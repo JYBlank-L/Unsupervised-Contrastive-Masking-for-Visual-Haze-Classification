@@ -22,7 +22,7 @@ if __name__ == "__main__":
     root_list = ["../realphotos/", "../haze-level/"]
     photo_path_list = ["../realphotos/photos/", "../haze-level/images/"]
     label_path_list = ["../realphotos/labels.mat", "../haze-level/labels.txt"]
-    type = 1  # 0 for realphotos, 1 for haze_level
+    type = 0  # 0 for realphotos, 1 for haze_level
     # Path to root folder
     root = root_list[type]
     # Path to read image: Load Image as a m*n*3 matrix
@@ -44,15 +44,17 @@ if __name__ == "__main__":
 
     # --------------------------------------------------------------------------------------------------------------------
     channel_filter = 40
-    denoised_filter = 20
+    denoised_filter_ratio = 20
+    mask_filter_ratio = 30
 
     # --------------------------------------------------------------------------------------------------------------------
     # Process photos
-    for x in range(0, 10):
+    for x in range(34, 35):
         print("Start to process image %d." % (x + 1))
 
         # Set path to save internal results of each image
-        result_path = root + "results/" + str(x + 1) + "/"
+        result_path = root + "results" + str(channel_filter) + str(denoised_filter_ratio) + str(mask_filter_ratio) \
+                      + "/" + str(x + 1) + "/"
         if not os.path.exists(result_path):
             os.makedirs(result_path)
 
@@ -80,18 +82,20 @@ if __name__ == "__main__":
         darkChannelMap_dark_image.save(result_path + 'darkChannelMap_dark_image1.png')
 
         denoised_time = time.perf_counter()
-        DenoisedImage = denoisedImage(contrastMap_image, denoised_filter)
+        DenoisedImage = denoisedImage(contrastMap_image, denoised_filter_ratio)
         DenoisedImage.save(result_path + 'DenoisedImage1.png')
         print("Running time for denoised time is %f sec." % (time.perf_counter() - denoised_time))
 
         # obtain mask image and boundary of the smallest box covering all haze regions
         m, n = contrastMap_image.shape
-        mask, bound, shape = maskImageCal(DenoisedImage, m, n)
-        rb_x = np.max(shape[0])
-        rb_y = np.max(shape[1])
-        lt_x = np.min(shape[0])
-        lt_y = np.min(shape[1])
-        haze_region_dark = image[lt_x:rb_x, lt_y:rb_y]
+        mask_time = time.perf_counter()
+        mask, bound = maskImageCal(DenoisedImage, m, n, mask_filter_ratio)
+        print("Running time for mask time is %f sec." % (time.perf_counter() - mask_time))
+        haze_region_dark = image[bound[0]:bound[1], bound[2]:bound[3]]
         haze_region_img = Image.fromarray(haze_region_dark)
         haze_region_img.save(result_path + 'hazeRegionImage1.png')
+        # ipdb.set_trace()
 
+        # resize the images for training and testing data
+        target_size = np.array([224, 224])  # The size of images (height, width) we want to obtain
+        resized_image = imageResize(haze_region_dark, target_size, result_path)

@@ -72,31 +72,35 @@ def maskImageCal(DenoisedImage, m, n, mask_filter_ratio):
     #             bound[2] = min(bound[2], j - patch_size_radius[1])
     #             bound[3] = max(bound[3], j + patch_size_radius[1] - 1)
 
-    max_out = nn.MaxPool2d(kernel_size=[patch_size_radius[0]*2, patch_size_radius[1]*2], stride=1)
+    flag = 1
+    while flag == 1:
+        max_out = nn.MaxPool2d(kernel_size=[patch_size_radius[0] * 2, patch_size_radius[1] * 2], stride=1)
 
-    input = torch.from_numpy(temp.astype(float)).unsqueeze(0)
-    output = max_out(input)
-    value = output.squeeze().numpy()
-    value = np.array(value)
-    shape = np.where(value != 255)
-    value1 = np.unique(shape[0])
-    row_top, row_bottom = findValue(value1)
+        input = torch.from_numpy(temp.astype(float)).unsqueeze(0)
+        output = max_out(input)
+        value = output.squeeze().numpy()
+        value = np.array(value)
+        shape = np.where(value != 255)
+        if len(shape[0]) == 0:
+            patch_size_radius = patch_size_radius // 2
+            continue
+        flag = 0
+    row_top, row_bottom = findValue(np.unique(shape[0]))
     row_bottom += patch_size_radius[0]*2 - 1
-    vol_left, vol_right = np.min(np.where(value[row_top:row_bottom] != 255)), np.max(np.where(value[row_top:row_bottom] != 255))
+    vol_left, vol_right = np.min(np.where(value[row_top:row_bottom] != 255)[1]), np.max(np.where(value[row_top:row_bottom] != 255)[1])
     vol_right += patch_size_radius[1]*2 - 2
-    bound1 = np.array([row_top, row_bottom, vol_left, vol_right])
+    bound = np.array([row_top, row_bottom, vol_left, vol_right])
 
     shape1 = (shape[0] + patch_size_radius[0]*2, shape[1] + patch_size_radius[1]*2)
 
-
     for i in range(len(shape[0])):
-        mask1[shape[0][i]:shape1[0][i], shape[1][i]:shape1[1][i]] = 1
-    mask1[:, vol_right+1] = 0
-    mask1[row_bottom+1:] = 0
+        mask[shape[0][i]:shape1[0][i], shape[1][i]:shape1[1][i]] = 1
+    mask[:, vol_right+1] = 0
+    mask[row_bottom+1:] = 0
 
     # mm = mask - mask1
     # ipdb.set_trace()
 
     # 理论上来讲应该二者一样，但是有的图片会出现不同，怀疑跟maxpooling实现方式有关，比如realphoto的第一张图的57行
 
-    return mask1, bound1
+    return mask, bound

@@ -43,17 +43,17 @@ if __name__ == "__main__":
     flag_test[index_all] = 1
 
     # --------------------------------------------------------------------------------------------------------------------
-    channel_filter = 40
+    channel_filter_ratio = 40
     denoised_filter_ratio = 20
-    mask_filter_ratio = 30
+    mask_filter_ratio = 60
 
     # --------------------------------------------------------------------------------------------------------------------
     # Process photos
-    for x in range(34, 35):
+    for x in range(3, 5):
         print("Start to process image %d." % (x + 1))
 
         # Set path to save internal results of each image
-        result_path = root + "results" + str(channel_filter) + str(denoised_filter_ratio) + str(mask_filter_ratio) \
+        result_path = root + "results" + str(channel_filter_ratio) + str(denoised_filter_ratio) + str(mask_filter_ratio) \
                       + "/" + str(x + 1) + "/"
         if not os.path.exists(result_path):
             os.makedirs(result_path)
@@ -73,29 +73,33 @@ if __name__ == "__main__":
         # Compute haze regions
         # Contrast map calculation
         contrast_time = time.perf_counter()
-        contrastMap_image, darkChannelMap_dark = contrastAnalysis(image, result_path, channel_filter)
+        contrastMap_image, darkChannelMap_dark, contrastMap2, contrastMap3 = contrastAnalysis(image, result_path,
+                                                                                              channel_filter_ratio)
         print("Running time for contrast time is %f sec." % (time.perf_counter() - contrast_time))
 
         img = Image.fromarray(contrastMap_image)
-        img.save(result_path + 'contrastMapImage1.png')
+        img.save(result_path + 'contrastMapImage.png')
         darkChannelMap_dark_image = Image.fromarray(darkChannelMap_dark)
         darkChannelMap_dark_image.save(result_path + 'darkChannelMap_dark_image1.png')
 
-        denoised_time = time.perf_counter()
-        DenoisedImage = denoisedImage(contrastMap_image, denoised_filter_ratio)
-        DenoisedImage.save(result_path + 'DenoisedImage1.png')
-        print("Running time for denoised time is %f sec." % (time.perf_counter() - denoised_time))
-
-        # obtain mask image and boundary of the smallest box covering all haze regions
+        contrast = [contrastMap_image, contrastMap2, contrastMap3]
         m, n = contrastMap_image.shape
-        mask_time = time.perf_counter()
-        mask, bound = maskImageCal(DenoisedImage, m, n, mask_filter_ratio)
-        print("Running time for mask time is %f sec." % (time.perf_counter() - mask_time))
-        haze_region_dark = image[bound[0]:bound[1], bound[2]:bound[3]]
-        haze_region_img = Image.fromarray(haze_region_dark)
-        haze_region_img.save(result_path + 'hazeRegionImage1.png')
+        for i in range(len(contrast)):
+            denoised_time = time.perf_counter()
+            DenoisedImage = denoisedImage(contrast[i], denoised_filter_ratio)
+            DenoisedImage.save(result_path + 'DenoisedImage' + str(i) + '.png')
+            print("Running time for denoised time is %f sec." % (time.perf_counter() - denoised_time))
+
+            # obtain mask image and boundary of the smallest box covering all haze regions
+            mask_time = time.perf_counter()
+            mask, bound = maskImageCal(DenoisedImage, m, n, mask_filter_ratio)
+            print("Running time for mask time is %f sec." % (time.perf_counter() - mask_time))
+            haze_region_dark = image[bound[0]:bound[1], bound[2]:bound[3]]
+            haze_region_img = Image.fromarray(haze_region_dark)
+            haze_region_img.save(result_path + 'hazeRegionImage' + str(i) + '.png')
         # ipdb.set_trace()
 
         # resize the images for training and testing data
-        target_size = np.array([224, 224])  # The size of images (height, width) we want to obtain
-        resized_image = imageResize(haze_region_dark, target_size, result_path)
+        # target_size = np.array([224, 224])  # The size of images (height, width) we want to obtain
+        # resized_image = imageResize(haze_region_dark, target_size, result_path)
+

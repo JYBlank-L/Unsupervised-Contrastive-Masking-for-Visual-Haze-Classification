@@ -33,12 +33,6 @@ def contrastAnalysis(image, path, filter):
     img_bright = Image.fromarray(image_bright)
     img_bright.save(path + 'img_bright.png')
     # ----------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-    # ----------------------------------------------------------------------------------------------------------------------
     # Dark/bright channel map calculation
 
     # channel maps of dark image
@@ -67,6 +61,8 @@ def contrastAnalysis(image, path, filter):
 
     div = (mean + median) / 2
     contrastMap[contrastMap > div] = 255
+    contrast_img = Image.fromarray(contrastMap)
+    contrast_img.save(path + '/' + 'contrast_img.png')
     img = Image.fromarray(brightChannelMap_bright)
     img.save(path + '/' + 'brightChannelMap_bright_image.png')
 
@@ -77,6 +73,21 @@ def contrastAnalysis(image, path, filter):
 
     mean_image = np.mean(image,axis=2)
 
-    contrastMap[np.where(mean_image < 100)] = 255 #Here use a trick that haze region pixels have intensity >= 100
+    contrastMap1 = contrastMap
+    contrastMap2 = contrastMap1 + 0
+    contrastMap3 = contrastMap2 + 0
 
-    return contrastMap, darkChannelMap_dark
+    contrastMap1[np.where(mean_image < 100)] = 255 #Here use a trick that haze region pixels have intensity >= 100
+    contrast1_img = Image.fromarray(contrastMap1)
+    contrast1_img.save(path + '/' + 'contrast1_img.png')
+
+    contrastMap3[np.where(mean_image < 130)] = 255
+    contrast3_img = Image.fromarray(contrastMap3)
+    contrast3_img.save(path + '/' + 'contrast3_img.png')
+
+    contrastMap2[np.where(mean_image < 150)] = 255
+    contrast2_img = Image.fromarray(contrastMap2)
+    contrast2_img.save(path + '/' + 'contrast2_img.png')
+
+
+    return contrastMap1, darkChannelMap_dark, contrastMap2, contrastMap3

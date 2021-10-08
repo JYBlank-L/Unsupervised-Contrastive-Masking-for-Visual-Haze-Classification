@@ -8,6 +8,8 @@ from darkImageCal import darkImageCal
 from brightImageCal import brightImageCal
 from darkChannelCal import darkChannelCal
 from brightChannelCal import brightChannelCal
+from haze.imageProcess import imageBox
+
 
 def contrastAnalysis(image, path, filter):
     '''
@@ -23,6 +25,12 @@ def contrastAnalysis(image, path, filter):
     '''
 
     # ----------------------------------------------------------------------------------------------------------------------
+    # image = image1 + 0
+    # mean_image = np.mean(image1, axis=2)
+    # image[np.where(mean_image < 180)] = 255
+    # img = Image.fromarray(image)
+    # img.save(path + '/' + 'image1.png')
+
     # Dark/bright image calculation
     image_dark = darkImageCal(image, path)
     image_bright = brightImageCal(image, path)
@@ -49,6 +57,29 @@ def contrastAnalysis(image, path, filter):
     # ----------------------------------------------------------------------------------------------------------------------
 
     contrastMap = brightChannelMap_bright - darkChannelMap_dark
+
+    # contrastMap1 = contrastMap
+    # contrastMap2 = contrastMap1 + 0
+    # contrastMap3 = contrastMap2 + 0
+    # contrastMap4 = contrastMap3 + 0
+    #
+    # mean_image = np.mean(image,axis=2)
+    #
+    # contrastMap1[np.where(mean_image < 100)] = 255  # Here use a trick that haze region pixels have intensity >= 100
+    # contrast1_img = Image.fromarray(contrastMap1)
+    # contrast1_img.save(path + '/' + 'contrast1_img_white.png')
+    #
+    # contrastMap4[np.where(mean_image < 200)] = 255
+    # contrast4_img = Image.fromarray(contrastMap4)
+    # contrast4_img.save(path + '/' + 'contrast4_img_white.png')
+    #
+    # contrastMap2[np.where(mean_image < 150)] = 255
+    # contrast2_img = Image.fromarray(contrastMap2)
+    # contrast2_img.save(path + '/' + 'contrast2_img_white.png')
+
+    contrast_img = Image.fromarray(contrastMap)
+    contrast_img.save(path + '/' + 'contrast_per_img.png')
+
     #histogram = np.zeros((255))
     #m,n = contrastMap.shape
 
@@ -71,23 +102,33 @@ def contrastAnalysis(image, path, filter):
     #median_intensity = np.median(image)
     #threshold = (mean_intensity + median_intensity) / 2
 
-    mean_image = np.mean(image,axis=2)
-
     contrastMap1 = contrastMap
     contrastMap2 = contrastMap1 + 0
     contrastMap3 = contrastMap2 + 0
+
+    mean_image = np.mean(image,axis=2)
+    R, G, B = imageBox.getRGB(image)
+    gray1 = np.mean(0.2 * (255-R) + 0.3 * (255-G) + 0.5 * (255-B))
+    gray2 = np.mean(0.1 * (255-R) + 0.4 * (255-G) + 0.5 * (255-B))
+    gray3 = np.mean(0.1 * (255-R) + 0.3 * (255-G) + 0.6 * (255-B))
+    gray4 = np.mean(0.33 * R + 0.33 * G + 0.5 * B)
+    # gray1 = 100
+    # gray2 = 150
+    # gray3 = 170
 
     contrastMap1[np.where(mean_image < 100)] = 255 #Here use a trick that haze region pixels have intensity >= 100
     contrast1_img = Image.fromarray(contrastMap1)
     contrast1_img.save(path + '/' + 'contrast1_img.png')
 
-    contrastMap3[np.where(mean_image < 130)] = 255
+    contrastMap2[np.where(mean_image < gray4)] = 255
+    contrast2_img = Image.fromarray(contrastMap2)
+    contrast2_img.save(path + '/' + 'contrast2_img.png')
+
+    contrastMap3[np.where(mean_image < 100)] = 255
     contrast3_img = Image.fromarray(contrastMap3)
     contrast3_img.save(path + '/' + 'contrast3_img.png')
 
-    contrastMap2[np.where(mean_image < 150)] = 255
-    contrast2_img = Image.fromarray(contrastMap2)
-    contrast2_img.save(path + '/' + 'contrast2_img.png')
+    # ipdb.set_trace()
 
 
     return contrastMap1, darkChannelMap_dark, contrastMap2, contrastMap3

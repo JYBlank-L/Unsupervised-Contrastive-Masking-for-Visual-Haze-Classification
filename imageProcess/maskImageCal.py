@@ -8,9 +8,6 @@ import torch.nn as nn
 from imageBox import findValue
 
 
-
-
-
 def maskImageCal(DenoisedImage, m, n, mask_filter_ratio):
     '''
     :param
@@ -28,7 +25,6 @@ def maskImageCal(DenoisedImage, m, n, mask_filter_ratio):
 
     temp = np.array(DenoisedImage)
 
-
     mask = np.zeros((m, n), dtype=np.uint8)  # operate on temp and store value to image_filtered
     mask1 = np.zeros((m, n), dtype=np.uint8)  # operate on temp and store value to image_filtered
 
@@ -36,10 +32,10 @@ def maskImageCal(DenoisedImage, m, n, mask_filter_ratio):
     patch_size = np.array([m // mask_filter_ratio, n // mask_filter_ratio])  # smallest patch size we want
     patch_size_radius = patch_size // 2  # radius of filter
 
-    bound = np.array([255, 0, 255, 0],
+    bound = np.array([temp.shape[0], 0, temp.shape[1], 0],
                      dtype=np.uint16)  # obtain the bound of smallest box covering the haze region - [row_top, row_bottom, vol_left, vol_right]
 
-    # empty_haze_region = 1
+    # empty_haze_region = 1g
     # flag = 1  # To divide haze region from black road on the bottom.. - indicate whether no patch-size haze is found in a row
     #
     # for i in range(patch_size_radius[0], m - patch_size_radius[0]):
@@ -55,7 +51,6 @@ def maskImageCal(DenoisedImage, m, n, mask_filter_ratio):
     #         batch = temp[(i - patch_size_radius[0]): (i + patch_size_radius[0]),
     #                 (j - patch_size_radius[1]): (j + patch_size_radius[1])]
     #         count = np.count_nonzero(batch == 255)
-    #
     #
     #         if count == 0:  # if the patch does not contain surely non-haze pixels
     #
@@ -85,22 +80,22 @@ def maskImageCal(DenoisedImage, m, n, mask_filter_ratio):
             patch_size_radius = patch_size_radius // 2
             continue
         flag = 0
-    row_top, row_bottom = findValue(np.unique(shape[0]))
+    row_top, row_bottom = findValue(np.unique(shape[0]), m // 5.6)
     row_bottom += patch_size_radius[0]*2 - 1
     vol_left, vol_right = np.min(np.where(value[row_top:row_bottom] != 255)[1]), np.max(np.where(value[row_top:row_bottom] != 255)[1])
     vol_right += patch_size_radius[1]*2 - 2
-    bound = np.array([row_top, row_bottom, vol_left, vol_right])
+    bound1 = np.array([row_top, row_bottom, vol_left, vol_right])
 
     shape1 = (shape[0] + patch_size_radius[0]*2, shape[1] + patch_size_radius[1]*2)
 
     for i in range(len(shape[0])):
         mask[shape[0][i]:shape1[0][i], shape[1][i]:shape1[1][i]] = 1
-    mask[:, vol_right+1] = 0
-    mask[row_bottom+1:] = 0
+    mask1[:, vol_right+1] = 0
+    mask1[row_bottom+1:] = 0
 
     # mm = mask - mask1
     # ipdb.set_trace()
 
     # 理论上来讲应该二者一样，但是有的图片会出现不同，怀疑跟maxpooling实现方式有关，比如realphoto的第一张图的57行
 
-    return mask, bound
+    return mask1, bound1

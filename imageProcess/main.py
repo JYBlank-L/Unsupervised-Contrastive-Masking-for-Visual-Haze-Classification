@@ -7,6 +7,7 @@ import time
 import math
 import random as rand
 import ipdb
+import io
 
 from contrastAnalysis import contrastAnalysis
 from maskImageCal import maskImageCal
@@ -29,6 +30,8 @@ if __name__ == "__main__":
     photo_path = photo_path_list[type]
     # Path to labels
     label_path = label_path_list[type]
+    # special photos
+    special_photo = [1, 5, 6, 27, 43, 50, 82, 95, 108, 115, 121, 129, 139, 231, 280]
     # --------------------------------------------------------------------------------------------------------------------
 
     label = loadLabel(type, label_path)
@@ -44,12 +47,13 @@ if __name__ == "__main__":
 
     # --------------------------------------------------------------------------------------------------------------------
     channel_filter_ratio = 40
-    denoised_filter_ratio = 20
-    mask_filter_ratio = 60
+    denoised_filter_ratio = 50
+    mask_filter_ratio = 70
 
     # --------------------------------------------------------------------------------------------------------------------
     # Process photos
-    for x in range(3, 5):
+    for x in range(38,39):
+        # x = x - 1
         print("Start to process image %d." % (x + 1))
 
         # Set path to save internal results of each image
@@ -82,7 +86,7 @@ if __name__ == "__main__":
         darkChannelMap_dark_image = Image.fromarray(darkChannelMap_dark)
         darkChannelMap_dark_image.save(result_path + 'darkChannelMap_dark_image1.png')
 
-        contrast = [contrastMap_image, contrastMap2, contrastMap3]
+        contrast = [contrastMap2]
         m, n = contrastMap_image.shape
         for i in range(len(contrast)):
             denoised_time = time.perf_counter()
@@ -97,6 +101,18 @@ if __name__ == "__main__":
             haze_region_dark = image[bound[0]:bound[1], bound[2]:bound[3]]
             haze_region_img = Image.fromarray(haze_region_dark)
             haze_region_img.save(result_path + 'hazeRegionImage' + str(i) + '.png')
+        image1 = image[bound[0]:bound[1], bound[2]:bound[3]]
+        mean = np.mean(image1)
+        median = np.median(image1)
+        haze1 = (mean + median) / 2
+        min = np.min(image1)
+        max = np.max(image1)
+
+        R1 = np.mean(R)
+        G1 = np.mean(G)
+        B1 = np.mean(B)
+        # with io.open(root + 'gray1.txt', 'a', encoding='utf-8') as file:
+        #     file.write('{} {:.4f} {:.4f} {:.4f} {:.4f} {} {}\n'.format(x, haze1, R1, G1, B1, mean, median))
         # ipdb.set_trace()
 
         # resize the images for training and testing data
